@@ -37,6 +37,11 @@ class EloquentModelEncryptedCastingTest extends DatabaseTestCase
             $table->text('secret_json')->nullable();
             $table->text('secret_object')->nullable();
             $table->text('secret_collection')->nullable();
+            $table->string('secret_deterministic', 1000)->nullable();
+            $table->text('secret_deterministic_array')->nullable();
+            $table->text('secret_deterministic_json')->nullable();
+            $table->text('secret_deterministic_object')->nullable();
+            $table->text('secret_deterministic_collection')->nullable();
         });
     }
 
@@ -52,12 +57,15 @@ class EloquentModelEncryptedCastingTest extends DatabaseTestCase
         /** @var \Illuminate\Tests\Integration\Database\EncryptedCast $subject */
         $subject = EncryptedCast::create([
             'secret' => 'this is a secret string',
+            'secret_deterministic' => 'this is a secret string',
         ]);
 
         $this->assertSame('this is a secret string', $subject->secret);
+        $this->assertSame('this is a secret string', $subject->secret_deterministic);
         $this->assertDatabaseHas('encrypted_casts', [
             'id' => $subject->id,
             'secret' => 'encrypted-secret-string',
+            'secret_deterministic' => 'encrypted-secret-string',
         ]);
     }
 
@@ -73,12 +81,15 @@ class EloquentModelEncryptedCastingTest extends DatabaseTestCase
         /** @var \Illuminate\Tests\Integration\Database\EncryptedCast $subject */
         $subject = EncryptedCast::create([
             'secret_array' => ['key1' => 'value1'],
+            'secret_deterministic_array' => ['key1' => 'value1'],
         ]);
 
         $this->assertSame(['key1' => 'value1'], $subject->secret_array);
+        $this->assertSame(['key1' => 'value1'], $subject->secret_deterministic_array);
         $this->assertDatabaseHas('encrypted_casts', [
             'id' => $subject->id,
             'secret_array' => 'encrypted-secret-array-string',
+            'secret_deterministic_array' => 'encrypted-secret-array-string',
         ]);
     }
 
@@ -94,12 +105,15 @@ class EloquentModelEncryptedCastingTest extends DatabaseTestCase
         /** @var \Illuminate\Tests\Integration\Database\EncryptedCast $subject */
         $subject = EncryptedCast::create([
             'secret_json' => ['key1' => 'value1'],
+            'secret_deterministic_json' => ['key1' => 'value1'],
         ]);
 
         $this->assertSame(['key1' => 'value1'], $subject->secret_json);
+        $this->assertSame(['key1' => 'value1'], $subject->secret_deterministic_json);
         $this->assertDatabaseHas('encrypted_casts', [
             'id' => $subject->id,
             'secret_json' => 'encrypted-secret-json-string',
+            'secret_deterministic_json' => 'encrypted-secret-json-string',
         ]);
     }
 
@@ -120,16 +134,20 @@ class EloquentModelEncryptedCastingTest extends DatabaseTestCase
 
         $subject = new EncryptedCast([
             'secret_json' => ['key1' => 'value1'],
+            'secret_deterministic_json' => ['key1' => 'value1'],
         ]);
         $subject->fill([
             'secret_json->key2' => 'value2',
+            'secret_deterministic_json->key2' => 'value2',
         ]);
         $subject->save();
 
         $this->assertSame(['key1' => 'value1', 'key2' => 'value2'], $subject->secret_json);
+        $this->assertSame(['key1' => 'value1', 'key2' => 'value2'], $subject->secret_deterministic_json);
         $this->assertDatabaseHas('encrypted_casts', [
             'id' => $subject->id,
             'secret_json' => 'encrypted-secret-json-string2',
+            'secret_deterministic_json' => 'encrypted-secret-json-string2',
         ]);
     }
 
@@ -149,13 +167,16 @@ class EloquentModelEncryptedCastingTest extends DatabaseTestCase
         /** @var \Illuminate\Tests\Integration\Database\EncryptedCast $object */
         $object = EncryptedCast::create([
             'secret_object' => $object,
+            'secret_deterministic_object' => $object,
         ]);
 
         $this->assertInstanceOf(stdClass::class, $object->secret_object);
+        $this->assertInstanceOf(stdClass::class, $object->secret_deterministic_object);
         $this->assertSame('value1', $object->secret_object->key1);
         $this->assertDatabaseHas('encrypted_casts', [
             'id' => $object->id,
             'secret_object' => 'encrypted-secret-object-string',
+            'secret_deterministic_object' => 'encrypted-secret-object-string',
         ]);
     }
 
@@ -172,13 +193,17 @@ class EloquentModelEncryptedCastingTest extends DatabaseTestCase
         /** @var \Illuminate\Tests\Integration\Database\EncryptedCast $subject */
         $subject = EncryptedCast::create([
             'secret_collection' => new Collection(['key1' => 'value1']),
+            'secret_deterministic_collection' => new Collection(['key1' => 'value1']),
         ]);
 
         $this->assertInstanceOf(Collection::class, $subject->secret_collection);
+        $this->assertInstanceOf(Collection::class, $subject->secret_deterministic_collection);
         $this->assertSame('value1', $subject->secret_collection->get('key1'));
+        $this->assertSame('value1', $subject->secret_deterministic_collection->get('key1'));
         $this->assertDatabaseHas('encrypted_casts', [
             'id' => $subject->id,
             'secret_collection' => 'encrypted-secret-collection-string',
+            'secret_deterministic_collection' => 'encrypted-secret-collection-string',
         ]);
     }
 
@@ -200,36 +225,50 @@ class EloquentModelEncryptedCastingTest extends DatabaseTestCase
         $subject = new EncryptedCast;
 
         $subject->mergeCasts(['secret_collection' => AsEncryptedCollection::class]);
+        $subject->mergeCasts(['secret_deterministic_collection' => AsEncryptedCollection::class]);
 
         $subject->secret_collection = new Collection(['key1' => 'value1']);
+        $subject->secret_deterministic_collection = new Collection(['key1' => 'value1']);
         $subject->secret_collection->put('key2', 'value2');
+        $subject->secret_deterministic_collection->put('key2', 'value2');
 
         $subject->save();
 
         $this->assertInstanceOf(Collection::class, $subject->secret_collection);
+        $this->assertInstanceOf(Collection::class, $subject->secret_deterministic_collection);
         $this->assertSame('value1', $subject->secret_collection->get('key1'));
+        $this->assertSame('value1', $subject->secret_deterministic_collection->get('key1'));
         $this->assertSame('value2', $subject->secret_collection->get('key2'));
+        $this->assertSame('value2', $subject->secret_deterministic_collection->get('key2'));
         $this->assertDatabaseHas('encrypted_casts', [
             'id' => $subject->id,
             'secret_collection' => 'encrypted-secret-collection-string-2',
+            'secret_deterministic_collection' => 'encrypted-secret-collection-string-2',
         ]);
 
         $subject = $subject->fresh();
 
         $this->assertInstanceOf(Collection::class, $subject->secret_collection);
+        $this->assertInstanceOf(Collection::class, $subject->secret_deterministic_collection);
         $this->assertSame('value1', $subject->secret_collection->get('key1'));
+        $this->assertSame('value1', $subject->secret_deterministic_collection->get('key1'));
         $this->assertSame('value2', $subject->secret_collection->get('key2'));
+        $this->assertSame('value2', $subject->secret_deterministic_collection->get('key2'));
 
         $subject->secret_collection = null;
+        $subject->secret_deterministic_collection = null;
         $subject->save();
 
         $this->assertNull($subject->secret_collection);
+        $this->assertNull($subject->secret_deterministic_collection);
         $this->assertDatabaseHas('encrypted_casts', [
             'id' => $subject->id,
             'secret_collection' => null,
+            'secret_deterministic_collection' => null,
         ]);
 
         $this->assertNull($subject->fresh()->secret_collection);
+        $this->assertNull($subject->fresh()->secret_deterministic_collection);
     }
 
     public function testAsEncryptedCollectionMap()
@@ -250,38 +289,54 @@ class EloquentModelEncryptedCastingTest extends DatabaseTestCase
         $subject = new EncryptedCast;
 
         $subject->mergeCasts(['secret_collection' => AsEncryptedCollection::of(Fluent::class)]);
+        $subject->mergeCasts(['secret_deterministic_collection' => AsEncryptedCollection::of(Fluent::class)]);
 
         $subject->secret_collection = new Collection([new Fluent(['key1' => 'value1'])]);
+        $subject->secret_deterministic_collection = new Collection([new Fluent(['key1' => 'value1'])]);
         $subject->secret_collection->push(new Fluent(['key2' => 'value2']));
+        $subject->secret_deterministic_collection->push(new Fluent(['key2' => 'value2']));
 
         $subject->save();
 
         $this->assertInstanceOf(Collection::class, $subject->secret_collection);
+        $this->assertInstanceOf(Collection::class, $subject->secret_deterministic_collection);
         $this->assertInstanceOf(Fluent::class, $subject->secret_collection->first());
+        $this->assertInstanceOf(Fluent::class, $subject->secret_deterministic_collection->first());
         $this->assertSame('value1', $subject->secret_collection->get(0)->key1);
+        $this->assertSame('value1', $subject->secret_deterministic_collection->get(0)->key1);
         $this->assertSame('value2', $subject->secret_collection->get(1)->key2);
+        $this->assertSame('value2', $subject->secret_deterministic_collection->get(1)->key2);
         $this->assertDatabaseHas('encrypted_casts', [
             'id' => $subject->id,
             'secret_collection' => 'encrypted-secret-collection-string-2',
+            'secret_deterministic_collection' => 'encrypted-secret-collection-string-2',
         ]);
 
         $subject = $subject->fresh();
 
         $this->assertInstanceOf(Collection::class, $subject->secret_collection);
+        $this->assertInstanceOf(Collection::class, $subject->secret_deterministic_collection);
         $this->assertInstanceOf(Fluent::class, $subject->secret_collection->first());
+        $this->assertInstanceOf(Fluent::class, $subject->secret_deterministic_collection->first());
         $this->assertSame('value1', $subject->secret_collection->get(0)->key1);
+        $this->assertSame('value1', $subject->secret_deterministic_collection->get(0)->key1);
         $this->assertSame('value2', $subject->secret_collection->get(1)->key2);
+        $this->assertSame('value2', $subject->secret_deterministic_collection->get(1)->key2);
 
         $subject->secret_collection = null;
+        $subject->secret_deterministic_collection = null;
         $subject->save();
 
         $this->assertNull($subject->secret_collection);
+        $this->assertNull($subject->secret_deterministic_collection);
         $this->assertDatabaseHas('encrypted_casts', [
             'id' => $subject->id,
             'secret_collection' => null,
+            'secret_deterministic_collection' => null,
         ]);
 
         $this->assertNull($subject->fresh()->secret_collection);
+        $this->assertNull($subject->fresh()->secret_deterministic_collection);
     }
 
     public function testAsEncryptedArrayObject()
@@ -308,34 +363,47 @@ class EloquentModelEncryptedCastingTest extends DatabaseTestCase
         $subject->mergeCasts(['secret_array' => AsEncryptedArrayObject::class]);
 
         $subject->secret_array = ['key1' => 'value1'];
+        $subject->secret_deterministic_array = ['key1' => 'value1'];
         $subject->secret_array['key2'] = 'value2';
+        $subject->secret_deterministic_array['key2'] = 'value2';
 
         $subject->save();
 
         $this->assertInstanceOf(ArrayObject::class, $subject->secret_array);
+        $this->assertInstanceOf(ArrayObject::class, $subject->secret_deterministic_array);
         $this->assertSame('value1', $subject->secret_array['key1']);
+        $this->assertSame('value1', $subject->secret_deterministic_array['key1']);
         $this->assertSame('value2', $subject->secret_array['key2']);
+        $this->assertSame('value2', $subject->secret_deterministic_array['key2']);
         $this->assertDatabaseHas('encrypted_casts', [
             'id' => $subject->id,
             'secret_array' => 'encrypted-secret-array-string-2',
+            'secret_deterministic_array' => 'encrypted-secret-array-string-2',
         ]);
 
         $subject = $subject->fresh();
 
         $this->assertInstanceOf(ArrayObject::class, $subject->secret_array);
+        $this->assertInstanceOf(ArrayObject::class, $subject->secret_deterministic_array);
         $this->assertSame('value1', $subject->secret_array['key1']);
+        $this->assertSame('value1', $subject->secret_deterministic_array['key1']);
         $this->assertSame('value2', $subject->secret_array['key2']);
+        $this->assertSame('value2', $subject->secret_deterministic_array['key2']);
 
         $subject->secret_array = null;
+        $subject->secret_deterministic_array = null;
         $subject->save();
 
         $this->assertNull($subject->secret_array);
+        $this->assertNull($subject->secret_deterministic_array);
         $this->assertDatabaseHas('encrypted_casts', [
             'id' => $subject->id,
             'secret_array' => null,
+            'secret_deterministic_array' => null,
         ]);
 
         $this->assertNull($subject->fresh()->secret_array);
+        $this->assertNull($subject->fresh()->secret_deterministic_array);
     }
 
     public function testCustomEncrypterCanBeSpecified()
@@ -362,12 +430,15 @@ class EloquentModelEncryptedCastingTest extends DatabaseTestCase
         /** @var \Illuminate\Tests\Integration\Database\EncryptedCast $subject */
         $subject = EncryptedCast::create([
             'secret' => 'this is a secret string',
+            'secret_deterministic' => 'this is a secret string',
         ]);
 
         $this->assertSame('this is a secret string', $subject->secret);
+        $this->assertSame('this is a secret string', $subject->secret_deterministic);
         $this->assertDatabaseHas('encrypted_casts', [
             'id' => $subject->id,
             'secret' => 'encrypted-secret-string',
+            'secret_deterministic' => 'encrypted-secret-string',
         ]);
     }
 }
@@ -390,5 +461,10 @@ class EncryptedCast extends Model
         'secret_json' => 'encrypted:json',
         'secret_object' => 'encrypted:object',
         'secret_collection' => 'encrypted:collection',
+        'secret_deterministic' => 'encrypted:deterministic',
+        'secret_deterministic_array' => 'encrypted:deterministic,array',
+        'secret_deterministic_json' => 'encrypted:deterministic,json',
+        'secret_deterministic_object' => 'encrypted:deterministic,object',
+        'secret_deterministic_collection' => 'encrypted:deterministic,collection',
     ];
 }
